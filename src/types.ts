@@ -6,9 +6,10 @@ export interface TransactionRequest {
 }
 
 export interface FeeOptions {
-  speed?: "slow" | "normal" | "fase";
+  speed?: "slow" | "normal" | "fast";
   maxFeeBudget?: number;
   minPriority?: number;
+  rpcUrl?: string;
 }
 
 export interface FeeResult {
