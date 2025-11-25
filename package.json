@@ -1,14 +1,25 @@
 {
   "name": "gas-optimizer",
   "version": "1.0.0",
-  "description": "",
+  "description": "A utility for Ethereum transaction fee optimization, automatically calculating optimal maxFeePerGas and maxPriorityFeePerGas based on network conditions and user preferences.",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "cli": "node --loader ts-node/esm src/cli.ts",
     "start": "node dist/cli.js"
   },
-  "keywords": [],
+  "keywords": [
+    "ethereum",
+    "ethers",
+    "gas",
+    "transaction",
+    "fee-optimization",
+    "blockchain",
+    "web3",
+    "ts-node",
+    "typescript",
+    "crypto"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
