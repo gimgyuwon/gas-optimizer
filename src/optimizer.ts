@@ -1,67 +1,41 @@
 import { getProvider } from "./provider.js";
+import { getHistoricalBaseFees } from "./estimator.js";
 
-function ewma(prev: number, current: number, alpha = 0.3) {
-  return alpha * current + (1 - alpha) * prev;
-}
-
-function computePriorityFee(
-  baseTip: number,
-  speed: "slow" | "normal" | "fast"
-) {
-  let multiplier = 1;
-  let percentile = 0.85;
-
-  if (speed === "fast") {
-    multiplier = 1.5;
-    percentile = 0.95;
-  } else if (speed === "slow") {
-    multiplier = 0.75;
-    percentile = 0.7;
-  }
-
-  return baseTip * multiplier * percentile;
-}
+const SPEED_PROFILE = {
+  slow: { alpha: 0.2, blocks: 15, priorityMul: 0.75, percentile: 0.7 },
+  normal: { alpha: 0.3, blocks: 10, priorityMul: 1.0, percentile: 0.85 },
+  fast: { alpha: 0.5, blocks: 5, priorityMul: 1.5, percentile: 0.95 },
+};
 
 export async function optimizeFee(
-  rpcUrl?: string,
-  speed: "slow" | "normal" | "fast" = "normal"
+  speed: "slow" | "normal" | "fast" = "normal",
+  rpcUrl?: string
 ) {
-  // get provider
+  const cfg = SPEED_PROFILE[speed];
+
+  // network recent gas
+  const baseFees = await getHistoricalBaseFees(rpcUrl, cfg.blocks);
+
+  if (baseFees.length === 0) {
+    throw new Error("No baseFee data available");
+  }
+
+  // EWMA
+  let ewma = baseFees[0]!;
+  for (let i = 1; i < baseFees.length; i++) {
+    ewma = cfg.alpha * baseFees[i]! + (1 - cfg.alpha) * ewma;
+  }
+
   const provider = getProvider(rpcUrl);
-
-  // calculate alpha and numBlock value
-  let numBlocks = 10;
-  let alpha = 0.3;
-  if (speed === "fast") {
-    numBlocks = 5;
-    alpha = 0.5;
-  } else if (speed === "slow") {
-    numBlocks = 15;
-    alpha = 0.2;
-  }
-
-  // initialize prevBase list
-  const prevBase: number[] = [];
-
-  // collect latest N block
-  let latestBlock = await provider.getBlock("latest");
-  if (!latestBlock) throw new Error("Failed to fetch latest block");
-  for (let i = 1; i < numBlocks; i++) {
-    const block = await provider.getBlock(latestBlock.number - i);
-    prevBase.push(Number(block?.baseFeePerGas ?? 0) / 1e9);
-  }
-
-  let ewmaBase = prevBase[0]!;
-  for (let i = 1; i < prevBase.length; i++) {
-    ewmaBase = ewma(ewmaBase, prevBase[i]!, alpha);
-  }
-
-  // decide priortyFee
   const feeData = await provider.getFeeData();
+
   const baseTip = Number(feeData.maxPriorityFeePerGas ?? 2);
-  const priorityFee = computePriorityFee(baseTip, speed);
+  const priorityFee = baseTip * cfg.priorityMul * cfg.percentile;
 
-  const maxFee = ewmaBase + priorityFee;
+  const maxFee = ewma + priorityFee;
 
-  return { maxFeePerGas: maxFee, maxPriorityFeePerGas: priorityFee };
+  return {
+    maxFeePerGas: maxFee,
+    maxPriorityFeePerGas: priorityFee,
+  };
 }

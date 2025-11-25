@@ -1,12 +1,9 @@
 import { ethers } from "ethers";
 
 export function getProvider(rpcUrl?: string): ethers.JsonRpcProvider {
-  const provider = rpcUrl || process.env.RPC_URL;
+  const url = rpcUrl || process.env.RPC_URL;
 
-  if (!provider)
-    throw new Error(
-      "RPC provider not provided. Set process.env.RPC_URL or pass rpcUrl option"
-    );
+  if (!url) throw new Error("RPC URL is not provided!");
 
-  return new ethers.JsonRpcProvider(`${provider}`);
+  return new ethers.JsonRpcProvider(`${url}`);
 }
