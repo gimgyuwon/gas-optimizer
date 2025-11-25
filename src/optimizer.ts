@@ -24,11 +24,21 @@ function computePriorityFee(
 
 export async function optimizeFee(
   rpcUrl?: string,
-  numBlocks = 5,
   speed: "slow" | "normal" | "fast" = "normal"
 ) {
   // get provider
   const provider = getProvider(rpcUrl);
+
+  // calculate alpha and numBlock value
+  let numBlocks = 10;
+  let alpha = 0.3;
+  if (speed === "fast") {
+    numBlocks = 5;
+    alpha = 0.5;
+  } else if (speed === "slow") {
+    numBlocks = 15;
+    alpha = 0.2;
+  }
 
   // initialize prevBase list
   const prevBase: number[] = [];
@@ -40,11 +50,6 @@ export async function optimizeFee(
     const block = await provider.getBlock(latestBlock.number - i);
     prevBase.push(Number(block?.baseFeePerGas ?? 0) / 1e9);
   }
-
-  // calculate ewma
-  let alpha = 0.3;
-  if (speed === "fast") alpha = 0.5;
-  if (speed === "slow") alpha = 0.2;
 
   let ewmaBase = prevBase[0]!;
   for (let i = 1; i < prevBase.length; i++) {
