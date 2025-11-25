@@ -1,6 +1,9 @@
 import { getProvider } from "./provider.js";
 
-export async function getHistoricalBaseFees(rpcUrl?: string, blockCount = 10) {
+export async function getHistoricalBaseFees(
+  rpcUrl?: string,
+  blockCount = 10
+): Promise<number[]> {
   const provider = getProvider(rpcUrl);
   const fees: number[] = [];
 
