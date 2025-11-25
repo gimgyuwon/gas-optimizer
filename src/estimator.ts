@@ -1,7 +1,13 @@
 import { getProvider } from "./provider.js";
 import type { FeeOptions, FeeResult, TransactionRequest } from "./types.js";
-import { ethers } from "ethers";
 
+/**
+ * Estimate fees for a transaction.
+ * - Uses latest block baseFeePerGas
+ * - Applies priority fee based on speed
+ * - Adds 10% safety margin to maxFee
+ * - Supports user-defined minPriority and maxFeeBudget
+ */
 export async function estimateFees(
   tx: TransactionRequest,
   options: FeeOptions = {}
