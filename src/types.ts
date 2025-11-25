@@ -8,7 +8,7 @@ export interface TransactionRequest {
   to: string;
   value: bigint;
   data?: string;
-  gasLimit?: bigint | number;
+  gasLimit?: bigint;
 }
 
 export interface FeeOptions {

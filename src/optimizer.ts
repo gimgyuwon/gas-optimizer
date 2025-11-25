@@ -8,6 +8,9 @@ const SPEED_PROFILE: Record<string, SpeedProfile> = {
   fast: { alpha: 0.5, blocks: 5, priorityMul: 1.5, percentile: 0.95 },
 };
 
+const MIN_PRIORITY_FEE_GWEI = 2;
+const MIN_MAX_FEE_GWEI = 2;
+
 export async function optimizeFee(
   options: FeeOptions = {}
 ): Promise<FeeResult> {
@@ -17,11 +20,9 @@ export async function optimizeFee(
   const blockCount = options.blockCount ?? cfg.blocks;
   const alpha = options.alpha ?? cfg.alpha;
 
-  // network recent gas
   const baseFees = await getHistoricalBaseFees(options.rpcUrl, blockCount);
   if (!baseFees.length) throw new Error("No baseFee data available");
 
-  // EWMA
   let ewma = baseFees[0]!;
   for (let i = 1; i < baseFees.length; i++) {
     ewma = alpha * baseFees[i]! + (1 - alpha) * ewma;
@@ -29,21 +30,19 @@ export async function optimizeFee(
 
   const provider = getProvider(options.rpcUrl);
   const feeData = await provider.getFeeData();
-  let baseTip = Number(feeData.maxPriorityFeePerGas ?? 2);
-  if (options.minPriorityFee)
-    baseTip = Math.max(baseTip, options.minPriorityFee);
 
-  const priorityFee = baseTip * cfg.priorityMul * cfg.percentile;
-  const maxFee = ewma + priorityFee;
+  let baseTipGwei = Number(feeData.maxPriorityFeePerGas ?? 2e9) / 1e9;
 
-  const result: FeeResult = {
-    maxFeePerGas: maxFee,
-    maxPriorityFeePerGas: priorityFee,
+  baseTipGwei = Math.max(
+    baseTipGwei,
+    options.minPriorityFee ?? MIN_PRIORITY_FEE_GWEI
+  );
+
+  const priorityFeeGwei = baseTipGwei * cfg.priorityMul * cfg.percentile;
+  const maxFeeGwei = Math.max(ewma + priorityFeeGwei, MIN_MAX_FEE_GWEI);
+
+  return {
+    maxFeePerGas: maxFeeGwei,
+    maxPriorityFeePerGas: priorityFeeGwei,
   };
-
-  if (options.maxFeeBudget) {
-    result.estimatedTotalCost = Math.min(maxFee, options.maxFeeBudget);
-  }
-
-  return result;
 }
