@@ -1,8 +1,12 @@
 import "dotenv/config";
-import { optimizeFee } from "./optimizer.js";
 import { sendOptimizedTransaction } from "./sender.js";
 import { ethers } from "ethers";
 
+/**
+ * Main function to demonstrate optimized transaction sending.
+ * It loads configuration from environment variables, defines the transaction,
+ * and sends it using the calculated Max Fee and Gas Limit.
+ */
 async function main() {
   const rpcUrl = process.env.RPC_URL;
   const recipientAddr = process.env.REC_ADDR;
@@ -13,21 +17,31 @@ async function main() {
     process.exit(1);
   }
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
-  const signer = new ethers.Wallet(privateKey, provider);
+  const txDetails = {
+    to: recipientAddr,
+    value: ethers.parseEther("0.001"),
+  };
 
-  const fees = await optimizeFee({ speed: "normal", rpcUrl });
-  console.log("Optimized fees:", fees);
+  const sendOptions = {
+    speed: "fast" as "fast",
+    rpcUrl: rpcUrl,
+    privateKey: privateKey,
+    // Optional: Uncomment to enforce a maximum total cost (e.g., 0.01 ETH)
+    maxBudget: ethers.parseEther("0.01"),
+  };
 
-  const txResponse = await sendOptimizedTransaction(
-    {
-      to: recipientAddr,
-      value: ethers.parseEther("0.001"),
-    },
-    { speed: "fast", rpcUrl, privateKey: privateKey }
+  console.log(
+    `Sending ${ethers.formatEther(txDetails.value)} ETH to ${txDetails.to}...`
   );
 
-  console.log("Transaction sent:", txResponse);
+  const txResponse = await sendOptimizedTransaction(txDetails, sendOptions);
+
+  console.log("--- Transaction Sent ---");
+  console.log(`Hash: ${txResponse.hash}`);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error("Transaction execution failed:");
+  console.error(error);
+  process.exit(1);
+});
