@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { Provider } from "./types.js";
 
 /**
  * Creates an ethers.js JsonRpcProvider instance.
@@ -9,7 +10,7 @@ import { ethers } from "ethers";
  * @example
  * const provider = getProvider('YOUR_RPC_URL');
  */
-export function getProvider(rpcUrl?: string): ethers.JsonRpcProvider {
+export function getProvider(rpcUrl?: string): Provider {
   const url = rpcUrl || process.env.RPC_URL;
   if (!url) throw new Error("RPC URL is not provided!");
   return new ethers.JsonRpcProvider(url);
