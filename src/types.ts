@@ -1,9 +1,3 @@
-export interface FeeResult {
-  maxFeePerGas: number;
-  maxPriorityFeePerGas: number;
-  estimatedTotalCost?: number;
-}
-
 export interface TransactionRequest {
   to: string;
   value: bigint;
